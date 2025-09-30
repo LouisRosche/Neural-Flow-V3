@@ -855,8 +855,6 @@
                 this.addEventListener(this.elements.exitGameBtn, 'click', () => this.exitGame());
                 this.addEventListener(this.elements.exportBtn, 'click', () => this.exportData());
                 this.addEventListener(this.elements.resetBtn, 'click', () => this.reset());
-
-                this.setupKeyboardControls();
                 
                 this.addEventListener(document.getElementById('loginForm'), 'keypress', (e) => {
                     if (e.key === 'Enter') {
@@ -865,7 +863,9 @@
                     }
                 });
                 
+                // Keyboard controls for games
                 this.addEventListener(document, 'keydown', (e) => {
+                    // Menu navigation
                     if (this.elements.screens.menu.classList.contains('active')) {
                         const cards = Array.from(document.querySelectorAll('.game-card:not(.completed)'));
                         const focused = document.activeElement;
@@ -880,6 +880,59 @@
                         } else if (e.key === 'Enter' && focused.classList.contains('game-card')) {
                             e.preventDefault();
                             focused.click();
+                        }
+                    }
+                    
+                    // Memory game - number keys
+                    if (this.state.currentGame === 'memory' && this.memoryState && 
+                        this.memoryState.userInput.length < this.memoryState.length) {
+                        const key = e.key;
+                        if (key >= '0' && key <= '9') {
+                            e.preventDefault();
+                            this.handleMemoryInput(parseInt(key));
+                        } else if (key === 'Backspace' || key === 'Delete') {
+                            e.preventDefault();
+                            this.clearMemoryInput();
+                        }
+                    }
+                    
+                    // Attention game - spacebar for nearest blue target
+                    if (this.state.currentGame === 'attention' && this.attentionState && e.key === ' ') {
+                        e.preventDefault();
+                        const blueTargets = Array.from(document.querySelectorAll('.target.blue'));
+                        if (blueTargets.length > 0) {
+                            const area = document.getElementById('targetArea');
+                            if (!area) return;
+                            const centerX = area.offsetWidth / 2;
+                            const centerY = area.offsetHeight / 2;
+                            
+                            let closest = blueTargets[0];
+                            let minDist = Infinity;
+                            
+                            blueTargets.forEach(target => {
+                                const rect = target.getBoundingClientRect();
+                                const areaRect = area.getBoundingClientRect();
+                                const targetX = rect.left - areaRect.left + rect.width / 2;
+                                const targetY = rect.top - areaRect.top + rect.height / 2;
+                                const dist = Math.sqrt(Math.pow(targetX - centerX, 2) + Math.pow(targetY - centerY, 2));
+                                if (dist < minDist) {
+                                    minDist = dist;
+                                    closest = target;
+                                }
+                            });
+                            
+                            this.handleTargetClick(closest);
+                        }
+                    }
+                    
+                    // Flexibility and Speed games - number keys 1-4 for options
+                    if ((this.state.currentGame === 'flexibility' || this.state.currentGame === 'speed') && 
+                        (e.key >= '1' && e.key <= '4')) {
+                        e.preventDefault();
+                        const buttons = Array.from(document.querySelectorAll('.response-btn'));
+                        const index = parseInt(e.key) - 1;
+                        if (buttons[index] && !buttons[index].disabled) {
+                            buttons[index].click();
                         }
                     }
                 });
