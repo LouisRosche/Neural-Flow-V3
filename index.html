@@ -1024,17 +1024,15 @@
                 const target = e.target;
                 
                 if (target.classList.contains('number-btn')) {
-                    e.preventDefault();
                     const num = parseInt(target.dataset.num);
                     if (!isNaN(num)) {
                         this.handleMemoryInput(num);
                     }
-                    return;
                 }
                 
                 if (target.classList.contains('response-btn')) {
-                    e.preventDefault();
                     if (target.disabled) return;
+                    e.preventDefault(); // ONLY THIS LINE ADDED
                     
                     const response = target.dataset.response;
                     const correct = target.dataset.correct;
@@ -1059,15 +1057,11 @@
                 }
                 
                 if (target.classList.contains('target')) {
-                    e.preventDefault();
                     this.handleTargetClick(target);
-                    return;
                 }
                 
                 if (target.id === 'clearBtn') {
-                    e.preventDefault();
                     this.clearMemoryInput();
-                    return;
                 }
             }
             
