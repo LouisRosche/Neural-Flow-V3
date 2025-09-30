@@ -333,8 +333,8 @@
 
         .target {
             position: absolute;
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             cursor: pointer;
             transition: transform 0.1s;
@@ -724,7 +724,7 @@
                     }
                 },
                 STORAGE_KEY: 'neural_flow_data',
-                MAX_TASKS: 3,
+                MAX_TASKS: 5,
                 CHECKSUM_SALT: 'NF2024'
             },
             
@@ -855,6 +855,8 @@
                 this.addEventListener(this.elements.exitGameBtn, 'click', () => this.exitGame());
                 this.addEventListener(this.elements.exportBtn, 'click', () => this.exportData());
                 this.addEventListener(this.elements.resetBtn, 'click', () => this.reset());
+
+                this.setupKeyboardControls();
                 
                 this.addEventListener(document.getElementById('loginForm'), 'keypress', (e) => {
                     if (e.key === 'Enter') {
@@ -897,6 +899,64 @@
                     }
                 });
             },
+                        
+            setupKeyboardControls() {
+                this.addEventListener(document, 'keydown', (e) => {
+                    // Memory game - number keys
+                    if (this.state.currentGame === 'memory' && this.memoryState && 
+                        this.memoryState.userInput.length < this.memoryState.length) {
+                        const key = e.key;
+                        if (key >= '0' && key <= '9') {
+                            e.preventDefault();
+                            this.handleMemoryInput(parseInt(key));
+                        } else if (key === 'Backspace' || key === 'Delete') {
+                            e.preventDefault();
+                            this.clearMemoryInput();
+                        }
+                    }
+                    
+                    // Attention game - spacebar for nearest blue target
+                    if (this.state.currentGame === 'attention' && this.attentionState && e.key === ' ') {
+                        e.preventDefault();
+                        const blueTargets = Array.from(document.querySelectorAll('.target.blue'));
+                        if (blueTargets.length > 0) {
+                            // Find the closest to center
+                            const area = document.getElementById('targetArea');
+                            if (!area) return;
+                            const centerX = area.offsetWidth / 2;
+                            const centerY = area.offsetHeight / 2;
+                            
+                            let closest = blueTargets[0];
+                            let minDist = Infinity;
+                            
+                            blueTargets.forEach(target => {
+                                const rect = target.getBoundingClientRect();
+                                const areaRect = area.getBoundingClientRect();
+                                const targetX = rect.left - areaRect.left + rect.width / 2;
+                                const targetY = rect.top - areaRect.top + rect.height / 2;
+                                const dist = Math.sqrt(Math.pow(targetX - centerX, 2) + Math.pow(targetY - centerY, 2));
+                                if (dist < minDist) {
+                                    minDist = dist;
+                                    closest = target;
+                                }
+                            });
+                            
+                            this.handleTargetClick(closest);
+                        }
+                    }
+                    
+                    // Flexibility and Speed games - number keys 1-4 for options
+                    if ((this.state.currentGame === 'flexibility' || this.state.currentGame === 'speed') && 
+                        (e.key >= '1' && e.key <= '4')) {
+                        e.preventDefault();
+                        const buttons = Array.from(document.querySelectorAll('.response-btn'));
+                        const index = parseInt(e.key) - 1;
+                        if (buttons[index] && !buttons[index].disabled) {
+                            buttons[index].click();
+                        }
+                    }
+                });
+            }
             
             addEventListener(element, event, handler) {
                 if (!element) return;
@@ -911,13 +971,16 @@
                 const target = e.target;
                 
                 if (target.classList.contains('number-btn')) {
+                    e.preventDefault();
                     const num = parseInt(target.dataset.num);
                     if (!isNaN(num)) {
                         this.handleMemoryInput(num);
                     }
+                    return;
                 }
                 
                 if (target.classList.contains('response-btn')) {
+                    e.preventDefault();
                     if (target.disabled) return;
                     
                     const response = target.dataset.response;
@@ -943,13 +1006,17 @@
                 }
                 
                 if (target.classList.contains('target')) {
+                    e.preventDefault();
                     this.handleTargetClick(target);
+                    return;
                 }
                 
                 if (target.id === 'clearBtn') {
+                    e.preventDefault();
                     this.clearMemoryInput();
+                    return;
                 }
-            },
+            }
             
             sanitizeInput(input) {
                 if (!input) return '';
@@ -1135,9 +1202,9 @@
             startCurrentTask() {
                 if (this.state.taskScores.length > 0) {
                     const lastScore = this.state.taskScores[this.state.taskScores.length - 1];
-                    if (lastScore >= 80) {
+                    if (lastScore >= 85) {
                         this.state.currentDifficulty = Math.min(this.state.currentDifficulty + 1, 5);
-                    } else if (lastScore < 50) {
+                    } else if (lastScore < 40) {
                         this.state.currentDifficulty = Math.max(this.state.currentDifficulty - 1, 1);
                     }
                 }
@@ -1449,7 +1516,7 @@
                 
                 this.spawnTarget();
             },
-            
+        
             spawnTarget() {
                 const state = this.attentionState;
                 
@@ -1474,12 +1541,13 @@
                     dot.dataset.spawnTime = Date.now();
                     dot.setAttribute('role', 'button');
                     dot.setAttribute('aria-label', isTarget ? 'Target circle - click this' : 'Distractor circle - avoid this');
+                    dot.setAttribute('tabindex', '0');
                     
                     const area = document.getElementById('targetArea');
                     if (!area) return;
                     
-                    const maxX = area.offsetWidth - 50;
-                    const maxY = area.offsetHeight - 50;
+                    const maxX = area.offsetWidth - 60;
+                    const maxY = area.offsetHeight - 60;
                     
                     dot.style.left = `${Math.random() * maxX}px`;
                     dot.style.top = `${Math.random() * maxY}px`;
@@ -1489,6 +1557,11 @@
                     
                     if (isTarget) state.targetsShown++;
                     else state.distractorsShown++;
+                    
+                    // Longer lifetime, especially at lower difficulties
+                    const baseTime = 2800;
+                    const difficultyReduction = (this.state.currentDifficulty - 1) * 150;
+                    const lifetime = baseTime - difficultyReduction;
                     
                     const timeoutId = setTimeout(() => {
                         if (dot.parentNode) {
@@ -1500,15 +1573,17 @@
                             const idx = state.active.indexOf(dot);
                             if (idx > -1) state.active.splice(idx, 1);
                         }
-                    }, 2000 - (this.state.currentDifficulty * 100));
+                    }, lifetime);
                     
                     state.timeouts.push(timeoutId);
                 }
                 
-                const nextSpawnId = setTimeout(() => this.spawnTarget(), 800 - (this.state.currentDifficulty * 50));
+                // Slower spawn rate
+                const baseSpawnDelay = 1000;
+                const difficultyReduction = (this.state.currentDifficulty - 1) * 50;
+                const nextSpawnId = setTimeout(() => this.spawnTarget(), baseSpawnDelay - difficultyReduction);
                 if (state.timeouts) state.timeouts.push(nextSpawnId);
-            },
-            
+            }            
             handleTargetClick(target) {
                 const state = this.attentionState;
                 const isTarget = target.dataset.isTarget === 'true';
