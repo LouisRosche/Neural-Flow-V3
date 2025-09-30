@@ -1352,6 +1352,12 @@
                     if (i < state.userInput.length) {
                         slot.textContent = state.userInput[i];
                         slot.classList.add('filled');
+                        // Apply color based on correctness
+                        if (state.correctness && state.correctness[i] !== undefined) {
+                            slot.style.background = state.correctness[i] ? 'var(--success)' : 'var(--error)';
+                            slot.style.borderColor = state.correctness[i] ? 'var(--success)' : 'var(--error)';
+                            slot.style.color = 'white';
+                        }
                     }
                     display.appendChild(slot);
                 }
@@ -1375,8 +1381,7 @@
                 clearBtn.textContent = 'Clear';
                 clearBtn.style.marginTop = '1rem';
                 area.appendChild(clearBtn);
-            },
-            
+            }            
             handleMemoryInput(num) {
                 const state = this.memoryState;
                 if (!state || state.userInput.length >= state.length) return;
@@ -1386,16 +1391,14 @@
                 
                 const isCorrect = num === state.sequence[position];
                 
-                const slot = document.getElementById(`slot-${position}`);
-                if (slot) {
-                    slot.textContent = num;
-                    slot.classList.add('filled');
-                    slot.style.background = isCorrect ? 'var(--success)' : 'var(--error)';
-                    slot.style.borderColor = isCorrect ? 'var(--success)' : 'var(--error)';
-                    slot.style.color = 'white';
-                }
+                // Store correctness with the input
+                if (!state.correctness) state.correctness = [];
+                state.correctness[position] = isCorrect;
                 
                 if (state.userInput.length >= state.length) {
+                    // Completed - show all with colors
+                    this.showMemoryInput();
+                    
                     let correct = 0;
                     for (let i = 0; i < state.length; i++) {
                         if (state.userInput[i] === state.sequence[i]) correct++;
@@ -1443,12 +1446,13 @@
                 } else {
                     this.showMemoryInput();
                 }
-            },
-            
+            }
+        
             clearMemoryInput() {
                 this.memoryState.userInput = [];
+                this.memoryState.correctness = []; // Clear correctness too
                 this.showMemoryInput();
-            },
+            }
             
             runAttentionTask() {
                 const area = this.elements.gameArea;
@@ -1901,16 +1905,18 @@
                 this.renderGames();
                 this.showFeedback(`${celebration} Average: ${average}%`, 'success');
             },
-            
+
             exitGame() {
-                if (this.state.currentTask === 0 || confirm('Exit game? Progress will be lost.')) {
+                if (this.state.currentTask === 0 || confirm('Exit current game? Your progress on other games will be saved.')) {
                     this.cleanupCurrentGame();
                     this.state.currentGame = null;
                     this.state.currentTask = 0;
                     this.state.taskScores = [];
+                    // Don't reset gameScores - keep completed games!
                     this.showScreen('menu');
+                    this.renderGames();
                 }
-            },
+            }
             
             showReport() {
                 const scores = this.state.gameScores;
