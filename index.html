@@ -1381,7 +1381,8 @@
                 clearBtn.textContent = 'Clear';
                 clearBtn.style.marginTop = '1rem';
                 area.appendChild(clearBtn);
-            }            
+            },            
+            
             handleMemoryInput(num) {
                 const state = this.memoryState;
                 if (!state || state.userInput.length >= state.length) return;
@@ -1446,13 +1447,13 @@
                 } else {
                     this.showMemoryInput();
                 }
-            }
+            },
         
             clearMemoryInput() {
                 this.memoryState.userInput = [];
                 this.memoryState.correctness = []; // Clear correctness too
                 this.showMemoryInput();
-            }
+            },
             
             runAttentionTask() {
                 const area = this.elements.gameArea;
@@ -1508,7 +1509,7 @@
                 area.appendChild(stats);
                 
                 this.spawnTarget();
-            },
+            }
         
             spawnTarget() {
                 const state = this.attentionState;
@@ -1916,7 +1917,7 @@
                     this.showScreen('menu');
                     this.renderGames();
                 }
-            }
+            },
             
             showReport() {
                 const scores = this.state.gameScores;
