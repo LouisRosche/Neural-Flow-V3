@@ -1630,7 +1630,8 @@
                 const difficultyReduction = (this.state.currentDifficulty - 1) * 50;
                 const nextSpawnId = setTimeout(() => this.spawnTarget(), baseSpawnDelay - difficultyReduction);
                 if (state.timeouts) state.timeouts.push(nextSpawnId);
-            }            
+            },        
+        
             handleTargetClick(target) {
                 const state = this.attentionState;
                 const isTarget = target.dataset.isTarget === 'true';
